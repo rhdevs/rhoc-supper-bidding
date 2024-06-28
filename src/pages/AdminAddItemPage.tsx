@@ -1,14 +1,14 @@
-import { useToast, Input, Button, Box } from "@chakra-ui/react";
+import { FileInput, TextInput, Button, Box } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
 import { useFormik } from "formik";
 import { ref, uploadBytes } from "firebase/storage";
 import { collection, addDoc } from "firebase/firestore";
-import { nanoid } from "nanoid";
+import { nanoid } from "nanoid"; // this is to scramble the file naming to avoid conflicts and XSS attacks
 import { useNavigate } from "react-router-dom";
 import { db, storage } from "@/firebase.ts";
 import Item from "@/types/Item.ts";
 
 const AdminAddItemPage = () => {
-  const toast = useToast();
   const navigate = useNavigate();
   const formik = useFormik<{ file: File | null; name: string }>({
     initialValues: {
@@ -31,21 +31,18 @@ const AdminAddItemPage = () => {
           return addDoc(collection(db, "items"), newItem);
         })
         .then(() => {
-          toast({
+          notifications.show({
             title: "Item uploaded successfully",
-            status: "success",
-            duration: 2000,
-            isClosable: true,
+            message: "",
+            color: "teal",
           });
           navigate("/admin/items");
         })
         .catch((error) => {
-          toast({
+          notifications.show({
             title: "Error uploading item",
-            description: error.message,
-            status: "error",
-            duration: 2000,
-            isClosable: true,
+            message: error.message,
+            color: "red",
           });
         });
     },
@@ -55,18 +52,15 @@ const AdminAddItemPage = () => {
     <Box>
       <h1>Add New Bid Item</h1>
       <form onSubmit={formik.handleSubmit}>
-        <Input
-          type="file"
+        <FileInput
           name="file"
           accept={"image/*"}
           required={true}
-          onChange={(event) => {
-            if (event.currentTarget.files) {
-              formik.setFieldValue("file", event.currentTarget.files[0]);
-            }
+          onChange={(file) => {
+            formik.setFieldValue("file", file);
           }}
         />
-        <Input
+        <TextInput
           type={"text"}
           name={"name"}
           placeholder={"Name"}

@@ -1,6 +1,6 @@
 import { createContext } from "react";
 import { useLoaderData, Outlet } from "react-router-dom";
-import { Container } from "@chakra-ui/react";
+import { Container } from "@mantine/core";
 import { User } from "@firebase/auth";
 import AdminNavbar from "@/components/shared/AdminNavbar.tsx";
 
@@ -17,7 +17,7 @@ const AdminView = () => {
   return (
     <AdminContext.Provider value={user}>
       <AdminNavbar />
-      <Container maxW={"container.lg"}>
+      <Container size={"lg"}>
         <Outlet />
       </Container>
     </AdminContext.Provider>

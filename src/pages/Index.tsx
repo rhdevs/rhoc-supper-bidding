@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
-import { Flex } from "@chakra-ui/react";
+import { Flex } from "@mantine/core";
 import { useLoaderData } from "react-router-dom";
 import Item from "@/types/Item.ts";
 import { onSnapshot, DocumentReference, getDoc } from "@firebase/firestore";
 
 type LoaderDataProps = {
-  item: Item,
-  ref: DocumentReference,
-}
+  item: Item;
+  ref: DocumentReference;
+};
 
 const Index = () => {
   const data = useLoaderData() as LoaderDataProps;
@@ -31,14 +31,11 @@ const Index = () => {
 
   return (
     <Flex>
-      {
-        item.name === "nullItem" ? (
-          <h1 className={"text-5xl font-bold"}>No current item</h1>
-        )
-        : (
-          <h1 className={"text-5xl font-bold"}>{item.name}</h1>
-        )
-      }
+      {item.name === "nullItem" ? (
+        <h1 className={"text-5xl font-bold"}>No current item</h1>
+      ) : (
+        <h1 className={"text-5xl font-bold"}>{item.name}</h1>
+      )}
     </Flex>
   );
 };

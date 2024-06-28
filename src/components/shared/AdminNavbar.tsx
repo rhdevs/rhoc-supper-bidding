@@ -1,18 +1,12 @@
 import { NavLink } from "react-router-dom";
-import { Flex, Link as ChakraLink } from "@chakra-ui/react";
+import { NavLink as MantineLink, Flex } from "@mantine/core";
 
 const AdminNavbar = () => {
   return (
-    <Flex gap={"16"} padding={"4"} borderBottom={"1px"} paddingLeft={"20%"}>
-      <ChakraLink as={NavLink} to={"/"}>
-        Public
-      </ChakraLink>
-      <ChakraLink as={NavLink} to={"/admin/items"}>
-        Items
-      </ChakraLink>
-      <ChakraLink as={NavLink} to={"/admin/groups"}>
-        Groups
-      </ChakraLink>
+    <Flex gap={"16"} className={"p-4 border-b"} >
+      <MantineLink component={NavLink} to={"/"} label={"Public"} />
+      <MantineLink component={NavLink} to={"/admin/items"} label={"Auctions"} />
+      <MantineLink component={NavLink} to={"/admin/groups"} label={"Inventory"} />
     </Flex>
   );
 };

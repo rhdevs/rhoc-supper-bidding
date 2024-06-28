@@ -2,74 +2,121 @@ import { useLoaderData, Link as RouterLink } from "react-router-dom";
 import {
   Box,
   Button,
-  Grid,
+  SimpleGrid,
   Image,
   Card,
-  CardHeader,
-  CardBody,
-  Link
-} from "@chakra-ui/react";
+  NativeSelect,
+  NumberInput,
+  Flex,
+  NavLink as MantineLink,
+} from "@mantine/core";
 import Item from "@/types/Item.ts";
-import { doc, updateDoc, DocumentReference } from "@firebase/firestore";
+import {
+  doc,
+  updateDoc,
+  DocumentReference,
+  getDocs,
+  collection,
+} from "@firebase/firestore";
 import { db } from "@/firebase.ts";
-import { useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 
 type LoaderDataProps = Item & {
-  id: string,
-  url: string,
-  ref: DocumentReference,
+  id: string;
+  url: string;
+  ref: DocumentReference;
 };
 
 const AdminItemsPage = () => {
   const data = useLoaderData() as LoaderDataProps[];
   const sortedData = data.sort((a, b) => a.name.localeCompare(b.name));
   const nullItemRef = doc(db, "bids", "nullItem");
-  const updateItem = async (itemRef: DocumentReference) =>  {
+  const updateItem = async (itemRef: DocumentReference) => {
     const docRef = doc(db, "bids", "currentItem");
     return await updateDoc(docRef, {
       ref: itemRef,
     });
-  }
+  };
+  const getGroups = async () => {
+    const groupsRef = collection(db, "groups");
+    return await getDocs(groupsRef);
+  };
 
   const { mutate, isPending } = useMutation({
-    mutationFn: updateItem
-  })
+    mutationFn: updateItem,
+  });
+
+  const groups = useQuery({
+    queryKey: ["groups"],
+    queryFn: getGroups,
+  });
 
   return (
     <Box>
-      <Link as={RouterLink} to="/admin/add_item">
-        <Button>
-          Add Item
-        </Button>
-      </Link>
-      <Button isLoading={isPending} onClick={() => {mutate(nullItemRef)}}>
-        End Bid
-      </Button>
-      <Grid
-        templateColumns={{
-          base: "repeat(1, 1fr)",
-          md: "repeat(3, 1fr)",
-          lg: "repeat(4, 1fr)",
+      <MantineLink component={RouterLink} to="/admin/add_item">
+        <Button>Add Item</Button>
+      </MantineLink>
+      <SimpleGrid
+        cols={{
+          base: 1,
+          md: 3,
+          lg: 4,
         }}
-        gap={6}
       >
         {sortedData &&
           sortedData.map((item) => {
             return (
               <Card key={item.id}>
-                <CardHeader>
-                  <h1>{item.name}</h1>
-                </CardHeader>
-                <CardBody>
+                <Card.Section>
                   <Image src={item.url} alt={item.name} />
-                  <Button isLoading={isPending} onClick={() => {mutate(item.ref)}}>
+                </Card.Section>
+
+                <h1>{item.name}</h1>
+                <Flex>
+                  <Button
+                    disabled={isPending}
+                    onClick={() => {
+                      mutate(item.ref);
+                    }}
+                  >
                     Start Bid
                   </Button>
-                </CardBody>
+                  <Button
+                    disabled={isPending}
+                    onClick={() => {
+                      mutate(nullItemRef);
+                    }}
+                  >
+                    End Bid
+                  </Button>
+                </Flex>
+                {groups.data && (
+                  <Box>
+                    <Flex>
+                      <NativeSelect label={"Group"}>
+                        {groups.data.docs
+                          .sort((a, b) => a.data().number - b.data().number)
+                          .map((group) => {
+                            return (
+                              <option key={group.id} value={group.id}>
+                                {group.data().number}
+                              </option>
+                            );
+                          })}
+                      </NativeSelect>
+                    </Flex>
+                    <Flex>
+                      <NumberInput label={"Points to Bid"}/>
+                    </Flex>
+                    <Button>
+                      Submit Bid
+                    </Button>
+                  </Box>
+                )}
               </Card>
             );
           })}
-      </Grid>
+      </SimpleGrid>
     </Box>
   );
 };

@@ -1,13 +1,12 @@
-import { Input, Text } from "@chakra-ui/react";
+import { Button, TextInput, PasswordInput, Text } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
 import { useFormik } from "formik";
-import { Button, useToast } from "@chakra-ui/react";
 import { signInWithEmailAndPassword } from "@firebase/auth";
 import { auth } from "@/firebase.ts";
 import { useNavigate } from "react-router-dom";
 
 const AdminLoginPage = () => {
   const navigate = useNavigate();
-  const toast = useToast();
 
   const formik = useFormik({
     initialValues: {
@@ -20,12 +19,11 @@ const AdminLoginPage = () => {
         values.username,
         values.password,
       ).then(() => {
-        navigate("/admin/bids");
-        toast({
+        navigate("/admin/items");
+        notifications.show({
           title: "Login Successful",
-          status: "success",
-          duration: 2000,
-          isClosable: true,
+          message: "You have successfully logged in",
+          color: "teal",
         });
       });
     },
@@ -33,9 +31,9 @@ const AdminLoginPage = () => {
 
   return (
     <form onSubmit={formik.handleSubmit} className={"m-6"}>
-      <Text fontSize="2xl">RHOC Supper Bidding Admin</Text>
+      <Text size="xl">RHOC Supper Bidding Admin</Text>
       <label htmlFor={"username"}>Username</label>
-      <Input
+      <TextInput
         placeholder="Username"
         name={"username"}
         id={"username"}
@@ -43,7 +41,7 @@ const AdminLoginPage = () => {
         value={formik.values.username}
       />
       <label htmlFor={"password"}>Password</label>
-      <Input
+      <PasswordInput
         placeholder="Password"
         name={"password"}
         id={"password"}

@@ -46,7 +46,7 @@ const router = createBrowserRouter([
         path: "groups",
         Component: GroupsPage,
         loader: getGroups,
-      }
+      },
     ],
   },
   {

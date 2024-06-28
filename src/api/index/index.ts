@@ -15,5 +15,5 @@ export const getCurrentItem = async () => {
     throw new Error("Item does not exist");
   }
 
-  return {item: itemSnap.data(), ref: docRef};
+  return { item: itemSnap.data(), ref: docRef };
 };
