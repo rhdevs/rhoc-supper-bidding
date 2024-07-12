@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
-import { Flex } from "@mantine/core";
+// import { Flex } from "@mantine/core";
 import { useLoaderData } from "react-router-dom";
 import Item from "@/types/Item.ts";
 import { onSnapshot, DocumentReference, getDoc } from "@firebase/firestore";
+
+import AdminNavbar from "@/components/shared/AdminNavbar";
 
 type LoaderDataProps = {
   item: Item;
@@ -30,13 +32,14 @@ const Index = () => {
   }, [data.ref]);
 
   return (
-    <Flex>
+    <main>
+      <AdminNavbar />
       {item.name === "nullItem" ? (
         <h1 className={"text-5xl font-bold"}>No current item</h1>
       ) : (
         <h1 className={"text-5xl font-bold"}>{item.name}</h1>
       )}
-    </Flex>
+    </main>
   );
 };
 

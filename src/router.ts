@@ -17,6 +17,7 @@ import {
   getAdminStatus,
 } from "@/api/authentication/admin.ts";
 import GroupsPage from "@/pages/GroupsPage.tsx";
+import AdminSignupPage from "./pages/AdminSignupPage";
 
 const logout = async () => {
   return await signOut(auth).then(() => redirect("/admin/login"));
@@ -27,6 +28,11 @@ const router = createBrowserRouter([
     path: "/",
     Component: Index,
     loader: getCurrentItem,
+  },
+  {
+    path: "signup",
+    Component: AdminSignupPage,
+    // loader: signupAdmin,
   },
   {
     path: "/admin",

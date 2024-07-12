@@ -68,7 +68,16 @@ const AdminItemsPage = () => {
             return (
               <Card key={item.id}>
                 <Card.Section>
-                  <Image src={item.url} alt={item.name} />
+                  <Image
+                    src={item.url}
+                    alt={item.name}
+                    style={{
+                      width: "250px",
+                      height: "250px",
+                      objectFit: "cover",
+                      borderRadius: "20px",
+                    }}
+                  />
                 </Card.Section>
 
                 <h1>{item.name}</h1>
@@ -78,6 +87,7 @@ const AdminItemsPage = () => {
                     onClick={() => {
                       mutate(item.ref);
                     }}
+                    style={{ marginRight: "10px" }}
                   >
                     Start Bid
                   </Button>
@@ -106,11 +116,9 @@ const AdminItemsPage = () => {
                       </NativeSelect>
                     </Flex>
                     <Flex>
-                      <NumberInput label={"Points to Bid"}/>
+                      <NumberInput label={"Points to Bid"} />
                     </Flex>
-                    <Button>
-                      Submit Bid
-                    </Button>
+                    <Button style={{ marginTop: "10px" }}>Submit Bid</Button>
                   </Box>
                 )}
               </Card>

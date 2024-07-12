@@ -1,5 +1,9 @@
 {
   "projects": {
-    "default": "rhoc-supper-bidding-4dc84"
-  }
+    "default": "rhoc-supper-bidding-dev",
+    "farhan": "rhoc-supper-bidding-dev"
+  },
+  "targets": {},
+  "etags": {},
+  "dataconnectEmulatorConfig": {}
 }

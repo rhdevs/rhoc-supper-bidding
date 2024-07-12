@@ -3,6 +3,8 @@ import { auth, db } from "@/firebase.ts";
 import { redirect } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
 
+// export const signupAdmin = async () => {};
+
 export const getAdminStatus = async () => {
   return await new Promise<{ user: User }>((resolve, reject) => {
     // first checks if user logged in
@@ -19,9 +21,20 @@ export const getAdminStatus = async () => {
     const { user } = data;
     const docRef = doc(db, "users", user.uid);
     const docSnap = await getDoc(docRef);
-    if (!docSnap.exists() || !docSnap.data()?.isAdmin) {
+
+    if (!docSnap.exists()) {
+      console.log("Document does not exist");
       return Promise.reject(redirect("/admin/login"));
     }
+
+    const userData = docSnap.data();
+    console.log("User data from Firestore:", userData);
+
+    if (!userData || !userData.isAdmin) {
+      console.log("User is not an admin");
+      return Promise.reject(redirect("/admin/login"));
+    }
+
     return { user };
   });
 };
