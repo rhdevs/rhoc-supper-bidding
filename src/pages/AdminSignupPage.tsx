@@ -1,11 +1,10 @@
 import { Button, TextInput, PasswordInput, Text } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { useFormik } from "formik";
-import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
-// import { auth } from "@/firebase.ts";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { auth } from "@/firebase.ts";
 import { useNavigate } from "react-router-dom";
 
-const auth = getAuth();
 const AdminSignupPage = () => {
   const navigate = useNavigate();
 

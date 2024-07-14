@@ -1,5 +1,7 @@
 import { doc, getDoc } from "firebase/firestore";
-import { db } from "@/firebase.ts";
+import { db, storage } from "@/firebase.ts";
+import Item from "@/types/Item";
+import { getDownloadURL, ref } from "firebase/storage";
 
 export const getCurrentItem = async () => {
   const docRef = doc(db, "bids", "currentItem");
@@ -15,5 +17,10 @@ export const getCurrentItem = async () => {
     throw new Error("Item does not exist");
   }
 
-  return { item: itemSnap.data(), ref: docRef };
+  const item = itemSnap.data() as Item;
+  const url = await getDownloadURL(ref(storage, item.storageUrl));
+  const amount = docSnap.data().amount;
+  console.log(amount);
+
+  return { item: item, url, amount, ref: docRef };
 };

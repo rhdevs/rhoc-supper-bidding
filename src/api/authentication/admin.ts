@@ -23,15 +23,12 @@ export const getAdminStatus = async () => {
     const docSnap = await getDoc(docRef);
 
     if (!docSnap.exists()) {
-      console.log("Document does not exist");
       return Promise.reject(redirect("/admin/login"));
     }
 
     const userData = docSnap.data();
-    console.log("User data from Firestore:", userData);
 
     if (!userData || !userData.isAdmin) {
-      console.log("User is not an admin");
       return Promise.reject(redirect("/admin/login"));
     }
 
