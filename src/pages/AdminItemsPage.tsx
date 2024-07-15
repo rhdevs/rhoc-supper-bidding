@@ -18,12 +18,10 @@ import {
   getDocs,
   getDoc,
   collection,
-  QuerySnapshot,
 } from "@firebase/firestore";
 import { db } from "@/firebase.ts";
-import { useQuery, useMutation, UseQueryResult } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState } from "react";
-import { DocumentData } from "firebase-admin/firestore";
 
 type LoaderDataProps = Item & {
   id: string;
@@ -34,28 +32,6 @@ type LoaderDataProps = Item & {
 const AdminItemsPage = () => {
   const data = useLoaderData() as LoaderDataProps[];
   const sortedData = data.sort((a, b) => a.name.localeCompare(b.name));
-  const nullItemRef = doc(db, "bids", "nullItem");
-  const updateItem = async (itemRef: DocumentReference) => {
-    const docRef = doc(db, "bids", "currentItem");
-    return await updateDoc(docRef, {
-      ref: itemRef,
-      id: itemRef.id,
-      amount: 0,
-    });
-  };
-  const getGroups = async () => {
-    const groupsRef = collection(db, "groups");
-    return await getDocs(groupsRef);
-  };
-
-  const { mutate, isPending } = useMutation({
-    mutationFn: updateItem,
-  });
-
-  const groups = useQuery({
-    queryKey: ["groups"],
-    queryFn: getGroups,
-  });
 
   return (
     <Box>
@@ -71,7 +47,7 @@ const AdminItemsPage = () => {
       >
         {sortedData &&
           sortedData.map((item) => {
-            return RenderItemCard(item, isPending, mutate, nullItemRef, groups);
+            return RenderItemCard(item);
           })}
       </SimpleGrid>
     </Box>
@@ -80,32 +56,73 @@ const AdminItemsPage = () => {
 
 export default AdminItemsPage;
 
-function RenderItemCard(
-  item: LoaderDataProps,
-  isPending: boolean,
-  mutate: (itemRef: DocumentReference) => void,
-  nullItemRef: DocumentReference,
-  groups: UseQueryResult<QuerySnapshot<DocumentData, DocumentData>, Error>,
-) {
+function RenderItemCard(item: LoaderDataProps) {
+  const nullItemRef = doc(db, "bids", "nullItem");
+
+  const updateItem = async (itemRef: DocumentReference) => {
+    const docRef = doc(db, "bids", "currentItem");
+    return await updateDoc(docRef, {
+      ref: itemRef,
+      id: itemRef.id,
+      amount: 0,
+    });
+  };
+
+  const getGroups = async () => {
+    const groupsRef = collection(db, "groups");
+    return await getDocs(groupsRef);
+  };
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: updateItem,
+  });
+
+  const groups = useQuery({
+    queryKey: ["groups"],
+    queryFn: getGroups,
+  });
+
   const [bidValue, setBid] = useState<number>(0);
+  const [activeItemId, setActiveItemId] = useState<string | null>(null);
+
+  const handleStartBid = (itemRef: DocumentReference) => {
+    console.log("handling start bid item: " + item.id);
+    console.log("Active item id: " + activeItemId);
+    if (activeItemId == null) {
+      mutate(itemRef);
+      setActiveItemId(item.id);
+      console.log("Active item id: " + activeItemId);
+    }
+  };
+
+  const handleEndBid = () => {
+    console.log("handling end bid item: " + item.id);
+    console.log("Active item id: " + activeItemId);
+    if (item.id == activeItemId) {
+      mutate(nullItemRef);
+      setActiveItemId(null);
+    }
+  };
 
   const handleSubmit = async (bidItem: string) => {
     const docRef = doc(db, "bids", "currentItem");
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
-      if (bidItem == docSnap.data().id) {
-        console.log("in success!");
+      const currentAmount = docSnap.data().amount;
+      if (bidItem == docSnap.data().id && bidValue > currentAmount) {
+        console.log("Submit bid success!");
         await updateDoc(docRef, {
           amount: bidValue,
         });
         return true;
       } else {
-        console.log("in fail");
+        console.log("Submit bid fail");
         return false;
       }
     }
   };
+
   return (
     <Card key={item.id}>
       <Card.Section>
@@ -126,7 +143,7 @@ function RenderItemCard(
         <Button
           disabled={isPending}
           onClick={() => {
-            mutate(item.ref);
+            handleStartBid(item.ref);
           }}
           style={{ marginRight: "10px" }}
         >
@@ -135,7 +152,7 @@ function RenderItemCard(
         <Button
           disabled={isPending}
           onClick={() => {
-            mutate(nullItemRef);
+            handleEndBid();
           }}
         >
           End Bid
@@ -171,8 +188,8 @@ function RenderItemCard(
             id={item.name}
             style={{ marginTop: "10px" }}
             onClick={() => {
-              setBid(0);
               handleSubmit(item.id);
+              setBid(0);
             }}
           >
             Submit Bid

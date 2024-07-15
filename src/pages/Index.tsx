@@ -37,32 +37,29 @@ const Index = () => {
   return (
     <main>
       <AdminNavbar />
-      {item.name === "nullItem" ? (
-        <h1 className={"text-5xl font-bold"}>No current item</h1>
-      ) : (
-        <Flex
-          direction={"column"}
-          justify={"center"}
-          align={"center"}
-          gap={"md"}
-        >
-          <Space h={"xl"} />
-          <h1 className={"text-5xl font-bold"}>{item.name}</h1>
-          <Image
-            src={data.url}
-            alt={item.name}
-            style={{
-              width: "350px",
-              height: "350px",
-              objectFit: "cover",
-              borderRadius: "20px",
-            }}
-          ></Image>
-          <h2 className={"text-3xl font-bold"}>
-            Current Bid Amount: {data.amount}
-          </h2>
-        </Flex>
-      )}
+      <Flex direction={"column"} justify={"center"} align={"center"} gap={"md"}>
+        <Space h={"xl"} />
+        {item.name === "nullItem" ? (
+          <h1 className={"text-5xl font-bold"}>No current item</h1>
+        ) : (
+          <>
+            <h1 className={"text-5xl font-bold"}>{item.name}</h1>
+            <Image
+              src={data.url}
+              alt={item.name}
+              style={{
+                width: "350px",
+                height: "350px",
+                objectFit: "cover",
+                borderRadius: "20px",
+              }}
+            ></Image>
+            <h2 className={"text-3xl font-bold"}>
+              Current Bid Amount: {data.amount}
+            </h2>
+          </>
+        )}
+      </Flex>
     </main>
   );
 };
