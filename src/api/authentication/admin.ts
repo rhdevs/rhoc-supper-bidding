@@ -3,8 +3,6 @@ import { auth, db } from "@/firebase.ts";
 import { redirect } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
 
-// export const signupAdmin = async () => {};
-
 export const getAdminStatus = async () => {
   return await new Promise<{ user: User }>((resolve, reject) => {
     // first checks if user logged in

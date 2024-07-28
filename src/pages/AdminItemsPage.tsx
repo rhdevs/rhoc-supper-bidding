@@ -8,7 +8,6 @@ import {
   NativeSelect,
   NumberInput,
   Flex,
-  NavLink as MantineLink,
 } from "@mantine/core";
 import Item from "@/types/Item.ts";
 import {
@@ -21,7 +20,8 @@ import {
 } from "@firebase/firestore";
 import { db } from "@/firebase.ts";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 
 type LoaderDataProps = Item & {
   id: string;
@@ -30,14 +30,45 @@ type LoaderDataProps = Item & {
 };
 
 const AdminItemsPage = () => {
+  const { data: currentUser, isLoading } = useAuth();
+
   const data = useLoaderData() as LoaderDataProps[];
   const sortedData = data.sort((a, b) => a.name.localeCompare(b.name));
 
+  const [userSnap, setUserSnap] = useState<unknown>(null);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (currentUser) {
+        const userUid = currentUser.uid;
+        const userRef = doc(db, "users", userUid);
+        const userSnapshot = await getDoc(userRef);
+        setUserSnap(userSnapshot.data());
+      }
+    };
+
+    fetchUserData();
+  }, [currentUser]);
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <Box>
-      <MantineLink component={RouterLink} to="/admin/add_item">
+      {/* <MantineLink component={RouterLink} to="/admin/add_item">
         <Button>Add Item</Button>
-      </MantineLink>
+      </MantineLink> */}
+      <Button
+        component={RouterLink}
+        to="/admin/add_item"
+        style={{
+          marginTop: "20px",
+          marginBottom: "20px",
+        }}
+      >
+        Add Item
+      </Button>
       <SimpleGrid
         cols={{
           base: 1,
@@ -47,7 +78,9 @@ const AdminItemsPage = () => {
       >
         {sortedData &&
           sortedData.map((item) => {
-            return RenderItemCard(item);
+            return (
+              <RenderItemCard key={item.id} item={item} userSnap={userSnap} />
+            );
           })}
       </SimpleGrid>
     </Box>
@@ -56,7 +89,13 @@ const AdminItemsPage = () => {
 
 export default AdminItemsPage;
 
-function RenderItemCard(item: LoaderDataProps) {
+const RenderItemCard = ({
+  item,
+  userSnap,
+}: {
+  item: LoaderDataProps;
+  userSnap: unknown;
+}) => {
   const nullItemRef = doc(db, "bids", "nullItem");
 
   const updateItem = async (itemRef: DocumentReference) => {
@@ -65,17 +104,18 @@ function RenderItemCard(item: LoaderDataProps) {
       ref: itemRef,
       id: itemRef.id,
       amount: 0,
+      user: userSnap,
     });
-  };
-
-  const getGroups = async () => {
-    const groupsRef = collection(db, "groups");
-    return await getDocs(groupsRef);
   };
 
   const { mutate, isPending } = useMutation({
     mutationFn: updateItem,
   });
+
+  const getGroups = async () => {
+    const groupsRef = collection(db, "groups");
+    return await getDocs(groupsRef);
+  };
 
   const groups = useQuery({
     queryKey: ["groups"],
@@ -85,22 +125,24 @@ function RenderItemCard(item: LoaderDataProps) {
   const [bidValue, setBid] = useState<number>(0);
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
 
-  const handleStartBid = (itemRef: DocumentReference) => {
-    console.log("handling start bid item: " + item.id);
-    console.log("Active item id: " + activeItemId);
-    if (activeItemId == null) {
-      mutate(itemRef);
-      setActiveItemId(item.id);
+  const handleBid = (process: string, itemRef: DocumentReference) => {
+    if (process == "start") {
+      console.log("handling start bid item: " + item.id);
       console.log("Active item id: " + activeItemId);
+      if (activeItemId == null) {
+        mutate(itemRef);
+        setActiveItemId(item.id);
+        console.log("Active item id: " + activeItemId);
+      }
     }
-  };
 
-  const handleEndBid = () => {
-    console.log("handling end bid item: " + item.id);
-    console.log("Active item id: " + activeItemId);
-    if (item.id == activeItemId) {
-      mutate(nullItemRef);
-      setActiveItemId(null);
+    if (process == "end") {
+      console.log("handling end bid item: " + item.id);
+      console.log("Active item id: " + activeItemId);
+      if (item.id == activeItemId) {
+        mutate(nullItemRef);
+        setActiveItemId(null);
+      }
     }
   };
 
@@ -143,7 +185,7 @@ function RenderItemCard(item: LoaderDataProps) {
         <Button
           disabled={isPending}
           onClick={() => {
-            handleStartBid(item.ref);
+            handleBid("start", item.ref);
           }}
           style={{ marginRight: "10px" }}
         >
@@ -152,7 +194,7 @@ function RenderItemCard(item: LoaderDataProps) {
         <Button
           disabled={isPending}
           onClick={() => {
-            handleEndBid();
+            handleBid("end", item.ref);
           }}
         >
           End Bid
@@ -198,4 +240,4 @@ function RenderItemCard(item: LoaderDataProps) {
       )}
     </Card>
   );
-}
+};

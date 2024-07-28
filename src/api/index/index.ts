@@ -6,8 +6,10 @@ import { getDownloadURL, ref } from "firebase/storage";
 export const getCurrentItem = async () => {
   const docRef = doc(db, "bids", "currentItem");
   const docSnap = await getDoc(docRef);
+  // check types for user
   let url = "",
-    amount = 0;
+    amount = 0,
+    user = "";
 
   if (!docSnap.exists()) {
     throw new Error("No current item found");
@@ -26,7 +28,9 @@ export const getCurrentItem = async () => {
   } else {
     url = await getDownloadURL(ref(storage, item.storageUrl));
     amount = docSnap.data().amount;
+    // add current user data into each bid
+    user = docSnap.data().user;
   }
 
-  return { item: item, url, amount, ref: docRef };
+  return { item: item, url, amount, user, ref: docRef };
 };

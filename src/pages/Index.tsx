@@ -7,10 +7,12 @@ import { onSnapshot, DocumentReference, getDoc } from "@firebase/firestore";
 
 import AdminNavbar from "@/components/shared/AdminNavbar";
 
+// tag user to current bid, use user to show which group is currently bidding
 type LoaderDataProps = {
   item: Item;
   url: string;
   amount: number;
+  user: DocumentReference;
   ref: DocumentReference;
 };
 
