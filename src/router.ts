@@ -32,7 +32,6 @@ const router = createBrowserRouter([
   {
     path: "signup",
     Component: AdminSignupPage,
-    // loader: signupAdmin,
   },
   {
     path: "/admin",

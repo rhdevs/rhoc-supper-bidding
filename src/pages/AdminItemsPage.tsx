@@ -5,7 +5,6 @@ import {
   SimpleGrid,
   Image,
   Card,
-  NativeSelect,
   NumberInput,
   Flex,
 } from "@mantine/core";
@@ -22,6 +21,9 @@ import { db } from "@/firebase.ts";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { DocumentData } from "firebase-admin/firestore";
+import Group from "@/types/Group";
+import { notifications } from "@mantine/notifications";
 
 type LoaderDataProps = Item & {
   id: string;
@@ -35,7 +37,7 @@ const AdminItemsPage = () => {
   const data = useLoaderData() as LoaderDataProps[];
   const sortedData = data.sort((a, b) => a.name.localeCompare(b.name));
 
-  const [userSnap, setUserSnap] = useState<unknown>(null);
+  const [userSnap, setUserSnap] = useState<DocumentData>();
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -50,7 +52,7 @@ const AdminItemsPage = () => {
     fetchUserData();
   }, [currentUser]);
 
-  if (isLoading) {
+  if (isLoading || userSnap == undefined) {
     return <div>Loading...</div>;
   }
 
@@ -94,10 +96,11 @@ const RenderItemCard = ({
   userSnap,
 }: {
   item: LoaderDataProps;
-  userSnap: unknown;
+  userSnap: DocumentData;
 }) => {
   const nullItemRef = doc(db, "bids", "nullItem");
 
+  // update currentItem in 'bids' + mutation function
   const updateItem = async (itemRef: DocumentReference) => {
     const docRef = doc(db, "bids", "currentItem");
     return await updateDoc(docRef, {
@@ -112,6 +115,7 @@ const RenderItemCard = ({
     mutationFn: updateItem,
   });
 
+  // get all groups and numbers to be displayed in RenderItemCard Components
   const getGroups = async () => {
     const groupsRef = collection(db, "groups");
     return await getDocs(groupsRef);
@@ -122,44 +126,139 @@ const RenderItemCard = ({
     queryFn: getGroups,
   });
 
-  const [bidValue, setBid] = useState<number>(0);
-  const [activeItemId, setActiveItemId] = useState<string | null>(null);
+  // get group of current user
+  const getGroup = async (): Promise<Group> => {
+    if (!userSnap.group) {
+      throw new Error("Group not found in user data");
+    }
+    const groupId = userSnap.group.id;
+    const groupRef = doc(db, "groups", groupId);
+    const groupDoc = await getDoc(groupRef);
+    return groupDoc.data() as Group;
+  };
 
-  const handleBid = (process: string, itemRef: DocumentReference) => {
+  //groupQuery.data has 2 fields, one is number and one is points
+  const groupQuery = useQuery({
+    queryKey: ["group", userSnap.group.id],
+    queryFn: getGroup,
+    enabled: !!userSnap.group,
+  });
+
+  const updateGroupPoints = async (groupId: string, pointsToReduce: number) => {
+    const groupRef = doc(db, "groups", groupId);
+    const groupSnap = await getDoc(groupRef);
+    console.log(pointsToReduce);
+
+    if (groupSnap.exists()) {
+      const currentPoints = groupSnap.data().points;
+      console.log(currentPoints);
+
+      if (currentPoints < pointsToReduce) {
+        console.error("Not enough points to reduce");
+        return false;
+      }
+
+      await updateDoc(groupRef, {
+        points: currentPoints - pointsToReduce,
+      });
+      console.log("Group points updated successfully!");
+      return true;
+    } else {
+      console.error("Group not found");
+      return false;
+    }
+  };
+
+  const [bidValue, setBid] = useState<number>(
+    localStorage.getItem("bidValue")
+      ? Number(localStorage.getItem("bidValue"))
+      : 0,
+  );
+  const [activeItemId, setActiveItemId] = useState<string | null>(
+    localStorage.getItem("activeItemId"),
+  );
+
+  // start and endbid process, use update current item function
+  const handleBid = async (process: string, itemRef: DocumentReference) => {
     if (process == "start") {
-      console.log("handling start bid item: " + item.id);
+      console.log("Handling start bid item: " + item.id);
       console.log("Active item id: " + activeItemId);
       if (activeItemId == null) {
         mutate(itemRef);
         setActiveItemId(item.id);
-        console.log("Active item id: " + activeItemId);
+        localStorage.setItem("activeItemId", item.id);
+        localStorage.setItem("bidValue", bidValue.toString());
+        notifications.show({
+          title: "Success",
+          message: "Bid has been started successfully!",
+          color: "teal",
+        });
       }
     }
 
     if (process == "end") {
-      console.log("handling end bid item: " + item.id);
+      console.log("Handling end bid item: " + item.id);
       console.log("Active item id: " + activeItemId);
+      setBid(Number(localStorage.getItem("bidValue")));
+
+      if (userSnap.group && groupQuery.data) {
+        console.log(bidValue);
+        const success = await updateGroupPoints(userSnap.group.id, bidValue);
+        if (!success) {
+          console.error("Failed to update group points");
+        }
+      }
+
       if (item.id == activeItemId) {
         mutate(nullItemRef);
         setActiveItemId(null);
+        localStorage.removeItem("activeItemId");
+        localStorage.removeItem("bidValue");
+        console.log(bidValue);
+        notifications.show({
+          title: "Success",
+          message: "Bid has been ended successfully!",
+          color: "green",
+        });
       }
+      setBid(0);
     }
   };
 
+  // handle submit bid process by any user
   const handleSubmit = async (bidItem: string) => {
     const docRef = doc(db, "bids", "currentItem");
     const docSnap = await getDoc(docRef);
 
-    if (docSnap.exists()) {
+    if (docSnap.exists() && groupQuery.data) {
       const currentAmount = docSnap.data().amount;
-      if (bidItem == docSnap.data().id && bidValue > currentAmount) {
-        console.log("Submit bid success!");
+      if (
+        bidItem == docSnap.data().id &&
+        bidValue > currentAmount &&
+        bidValue < groupQuery.data.points
+      ) {
+        localStorage.setItem("bidValue", bidValue.toString());
         await updateDoc(docRef, {
+          ref: item.ref,
+          id: item.ref.id,
           amount: bidValue,
+          user: userSnap,
+        });
+        notifications.show({
+          title: "Success",
+          message: "Bid submitted successfully!",
+          color: "green",
         });
         return true;
       } else {
         console.log("Submit bid fail");
+        setBid(0);
+        localStorage.removeItem("bidValue");
+        notifications.show({
+          title: "Error",
+          message: "Failed to submit bid.",
+          color: "red",
+        });
         return false;
       }
     }
@@ -180,8 +279,8 @@ const RenderItemCard = ({
         />
       </Card.Section>
 
-      <h1>{item.name}</h1>
-      <Flex>
+      <h1 style={{ marginTop: "10px", fontWeight: "bold" }}>{item.name}</h1>
+      <Flex style={{ marginTop: "5px" }}>
         <Button
           disabled={isPending}
           onClick={() => {
@@ -202,8 +301,9 @@ const RenderItemCard = ({
       </Flex>
       {groups.data && (
         <Box>
-          <Flex>
-            <NativeSelect label={"Group"}>
+          <Flex style={{ marginTop: "10px", marginBottom: "10px" }}>
+            <h2>Group</h2>
+            {/* <NativeSelect label={"Group"}>
               {groups.data.docs
                 .sort((a, b) => a.data().number - b.data().number)
                 .map((group) => {
@@ -213,7 +313,8 @@ const RenderItemCard = ({
                     </option>
                   );
                 })}
-            </NativeSelect>
+            </NativeSelect> */}
+            <p style={{ marginLeft: "5px" }}>{groupQuery.data?.number}</p>
           </Flex>
           <Flex>
             <NumberInput
@@ -231,7 +332,6 @@ const RenderItemCard = ({
             style={{ marginTop: "10px" }}
             onClick={() => {
               handleSubmit(item.id);
-              setBid(0);
             }}
           >
             Submit Bid
