@@ -19,9 +19,17 @@ export const getAdminStatus = async () => {
     const { user } = data;
     const docRef = doc(db, "users", user.uid);
     const docSnap = await getDoc(docRef);
-    if (!docSnap.exists() || !docSnap.data()?.isAdmin) {
+
+    if (!docSnap.exists()) {
       return Promise.reject(redirect("/admin/login"));
     }
+
+    const userData = docSnap.data();
+
+    if (!userData || !userData.isAdmin) {
+      return Promise.reject(redirect("/admin/login"));
+    }
+
     return { user };
   });
 };

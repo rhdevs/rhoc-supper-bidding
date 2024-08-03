@@ -1,11 +1,11 @@
 import { Button, TextInput, PasswordInput, Text } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { useFormik } from "formik";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/firebase.ts";
 import { useNavigate } from "react-router-dom";
 
-const AdminLoginPage = () => {
+const AdminSignupPage = () => {
   const navigate = useNavigate();
 
   const formik = useFormik({
@@ -14,15 +14,15 @@ const AdminLoginPage = () => {
       password: "",
     },
     onSubmit: async (values) => {
-      return signInWithEmailAndPassword(
+      return createUserWithEmailAndPassword(
         auth,
         values.username,
         values.password,
       ).then(() => {
-        navigate("/admin/items");
+        navigate("/admin/login");
         notifications.show({
-          title: "Login Successful",
-          message: "You have successfully logged in",
+          title: "Account creation successful",
+          message: "You have successfully created your account, login now!",
           color: "teal",
         });
       });
@@ -31,7 +31,7 @@ const AdminLoginPage = () => {
 
   return (
     <form onSubmit={formik.handleSubmit} className={"m-6"}>
-      <Text size="xl">RHOC Supper Bidding Admin</Text>
+      <Text size="xl">Create RHOC Supper Bidding Admin</Text>
       <label htmlFor={"username"}>Username</label>
       <TextInput
         placeholder="Username"
@@ -49,9 +49,9 @@ const AdminLoginPage = () => {
         onChange={formik.handleChange}
         value={formik.values.password}
       />
-      <Button type="submit">Login</Button>
+      <Button type="submit">Signup</Button>
     </form>
   );
 };
 
-export default AdminLoginPage;
+export default AdminSignupPage;
